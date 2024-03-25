@@ -20,7 +20,7 @@ export class ChatComponent implements OnInit {
   chats: Chat[] = [];
   editingMessageId: string | any;
   chatsRef!: DatabaseReference;
-  selectedFile: File | null = null;
+  selectedFiles: File[] | null = [];
   storage: FirebaseStorage;
   constructor(
     private formBuilder: FormBuilder,
@@ -68,11 +68,17 @@ export class ChatComponent implements OnInit {
     const { username, message } = formValue;
     // Upload the image to Firebase Storage
     let imageUrl = '';
+    let imageUrls = [];
 
-    if (this.selectedFile) {
-      const storageRef = storeRef(this.storage, `images/${Date.now()}_${this.selectedFile.name}`);
-      const snapshot = await uploadBytes(storageRef, this.selectedFile);
-      imageUrl = await getDownloadURL(snapshot.ref);
+    if (this.selectedFiles) {
+      for (let i = 0; i < this.selectedFiles.length; i++) {
+        const file: File = this.selectedFiles[i];
+        // Upload each file to Firebase Storage
+        const storageRef = storeRef(this.storage, `images/${Date.now()}_${file.name}`);
+        const snapshot = await uploadBytes(storageRef, file);
+        imageUrl = await getDownloadURL(snapshot.ref);
+        imageUrls.push(imageUrl);
+      }
     }
    
     // Send the message including the image URL
@@ -80,14 +86,14 @@ export class ChatComponent implements OnInit {
       id: uuidv4(),
       username,
       message: message.trim(),
-      imageUrl,
+      imageUrls,
       timestamp: new Date().toString(),
     };
 
     set(ref(this.db, `chats/${chatMessage.id}`), chatMessage);
 
     this.form.reset();
-    this.selectedFile = null;
+    this.selectedFiles = null;
   }
 
   onDelete(chatId: string | undefined) {
@@ -119,8 +125,8 @@ export class ChatComponent implements OnInit {
     this.editingMessageId = null;
   }
 
-  onFileSelected(event: any) {
-    this.selectedFile = event.target.files[0];
+  onFilesSelected(event: any) {
+    this.selectedFiles = event.target.files;
   }
 
   trackByChatId(index: number, chat: Chat): string | undefined {

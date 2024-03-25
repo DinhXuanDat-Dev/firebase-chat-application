@@ -10,7 +10,7 @@
             <mat-icon>send</mat-icon>
         </button>
     </mat-form-field>
-    <input type="file" (change)="onFileSelected($event)" accept="image/*">
+    <input type="file" (change)="onFilesSelected($event)" accept="image/*" multiple>
 </form>
 <hr>
 <div id="history">
@@ -22,7 +22,9 @@
                 </mat-card-subtitle>
                 <mat-card-content *ngIf="editingMessageId !== chat.id">
                     <p>{{chat.message}}</p>
-                    <img *ngIf="chat.imageUrl" [src]="chat.imageUrl" width="50" height="50">
+                    <div *ngFor="let imgUrl of chat?.imageUrls">
+                        <img *ngIf="imgUrl" [src]="imgUrl" width="50" height="50">
+                    </div>
                 </mat-card-content>
                 <mat-card-content *ngIf="editingMessageId === chat.id">
                     <input matInput [(ngModel)]="chat.message">
