@@ -3,9 +3,24 @@
     margin-right: auto;
     padding-left: 1em;
     padding-right: 1em;
-    width: 400px;
+    width: 600px;
     height: 60%;
-    overflow-y: scroll;
+    .mat-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        .mat-card-content {
+            input {
+                border: solid 1px #7171be;
+                padding: 10px 10px;
+                border-radius: 5px;
+            }
+        }
+        .edit-actions {
+            margin-top: 15px;
+        }
+    }
 }
 
 #message {
@@ -20,4 +35,8 @@
 
 .mb {
     margin-bottom: 1em;
+}
+
+.red {
+    color: red;
 }

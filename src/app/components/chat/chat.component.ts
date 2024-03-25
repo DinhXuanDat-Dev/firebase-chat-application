@@ -1,28 +1,32 @@
 import { Component, OnInit } from '@angular/core';
 import { FirebaseApp, initializeApp } from 'firebase/app';
-import { Database, getDatabase, ref, set, onValue  } from "firebase/database";
+import { Database, getDatabase, ref, set, onValue, remove, onChildChanged, DatabaseReference, onChildRemoved  } from "firebase/database";
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { v4 as uuidv4 } from 'uuid';
 import { Chat } from 'src/@core/interfaces/chat';
 import { firebaseConfig } from 'src/environments/environment';
+import { getDownloadURL, ref as storeRef, getStorage, uploadBytes, FirebaseStorage } from 'firebase/storage';
 @Component({
   selector: 'app-chat',
   templateUrl: './chat.component.html',
   styleUrls: ['./chat.component.scss']
 })
 export class ChatComponent implements OnInit {
-  title = 'firechat';
   app!: FirebaseApp;
   db!: Database;
   form!: FormGroup;
   username = '';
   message = '';
   chats: Chat[] = [];
-
+  editingMessageId: string | any;
+  chatsRef!: DatabaseReference;
+  selectedFile: File | null = null;
+  storage: FirebaseStorage;
   constructor(
     private formBuilder: FormBuilder,
   ) {
     this.app = initializeApp(firebaseConfig);
+    this.storage = getStorage(this.app);
     this.db = getDatabase(this.app);
     this.form = this.formBuilder.group({
       'message' : ['', Validators.required],
@@ -31,26 +35,96 @@ export class ChatComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    const chatsRef = ref(this.db, 'chats');
-    onValue(chatsRef, (snapshot: any) => {
+    this.chatsRef = ref(this.db, 'chats');
+    this.listenData();
+  }
+
+  listenData() {
+    onValue(this.chatsRef, (snapshot: any) => {
       const data = snapshot.val();
-      for(let id in data) {
-        if (!this.chats.map(chat => chat.id).includes(id)) {
-          this.chats.push(data[id]);
-        }
+      if(!data) return;
+      this.chats = Object.keys(data)?.map(key => ({ id: key, ...data[key] }));
+    }, (error) => {
+      console.error("Error fetching data:", error);
+    });
+
+    onChildChanged(this.chatsRef, (snapshot) => {
+      const changedChat = snapshot.val();
+      const chatIndex = this.chats.findIndex(chat => chat.id === snapshot.key);
+      if (chatIndex !== -1) {
+        this.chats[chatIndex] = { id: snapshot.key, ...changedChat };
       }
+    }, (error) => {
+      console.error("Error listening for child changes:", error);
+    });
+
+    onChildRemoved(this.chatsRef, (snapshot) => {
+      const deletedChatId = snapshot.key;
+      this.chats = this.chats.filter(chat => chat.id !== deletedChatId);
     });
   }
 
-  onChatSubmit(form: any) {
-    const chat = form;
-    chat.timestamp = new Date().toString();
-    chat.id = uuidv4();
-    set(ref(this.db, `chats/${chat.id}`), chat);
-    this.form = this.formBuilder.group({
-      'message': [],
-      'username': [chat.username],
-    });
+  async onChatSubmit(formValue: any) {
+    const { username, message } = formValue;
+    // Upload the image to Firebase Storage
+    let imageUrl = '';
+
+    if (this.selectedFile) {
+      const storageRef = storeRef(this.storage, `images/${Date.now()}_${this.selectedFile.name}`);
+      const snapshot = await uploadBytes(storageRef, this.selectedFile);
+      imageUrl = await getDownloadURL(snapshot.ref);
+    }
+   
+    // Send the message including the image URL
+    const chatMessage = {
+      id: uuidv4(),
+      username,
+      message: message.trim(),
+      imageUrl,
+      timestamp: new Date().toString(),
+    };
+
+    set(ref(this.db, `chats/${chatMessage.id}`), chatMessage);
+
+    this.form.reset();
+    this.selectedFile = null;
+  }
+
+  onDelete(chatId: string | undefined) {
+    remove(ref(this.db, `chats/${chatId}`))
+      .then(() => {
+        this.chats = this.chats.filter(chat => chat.id !== chatId);
+      })
+      .catch(error => console.log(error));
+  }
+
+  onStartEdit(chatId: string | any) {
+    this.editingMessageId = chatId;
+  }
+
+  onSaveEdit(chatId: string | any, updatedMessage: string) {
+    const chatIndex = this.chats.findIndex(chat => chat.id === chatId);
+    if (chatIndex !== -1) {
+      const updatedChat = { ...this.chats[chatIndex], message: updatedMessage };
+      set(ref(this.db, `chats/${chatId}`), updatedChat)
+        .then(() => {
+          this.chats[chatIndex] = updatedChat;
+          this.editingMessageId = null;
+        })
+        .catch(error => console.log(error));
+    }
+  }
+
+  onCancelEdit() {
+    this.editingMessageId = null;
+  }
+
+  onFileSelected(event: any) {
+    this.selectedFile = event.target.files[0];
+  }
+
+  trackByChatId(index: number, chat: Chat): string | undefined {
+    return chat.id;
   }
 
 }

@@ -10,17 +10,41 @@
             <mat-icon>send</mat-icon>
         </button>
     </mat-form-field>
+    <input type="file" (change)="onFileSelected($event)" accept="image/*">
 </form>
 <hr>
 <div id="history">
-    <div *ngFor="let chat of chats" class="mb">
+    <div *ngFor="let chat of chats; trackBy: trackByChatId" class="mb">
         <mat-card>
-            <mat-card-subtitle>
-                <span>{{chat.username}} (Sent: {{chat.timestamp | date:'long'}})</span>
-            </mat-card-subtitle>
-            <mat-card-content>
-                <p>{{chat.message}}</p>
-            </mat-card-content>
+            <div>
+                <mat-card-subtitle>
+                    <span><b>{{chat.username}}</b> (Sent: {{chat.timestamp | date:'long'}})</span>
+                </mat-card-subtitle>
+                <mat-card-content *ngIf="editingMessageId !== chat.id">
+                    <p>{{chat.message}}</p>
+                    <img *ngIf="chat.imageUrl" [src]="chat.imageUrl" width="50" height="50">
+                </mat-card-content>
+                <mat-card-content *ngIf="editingMessageId === chat.id">
+                    <input matInput [(ngModel)]="chat.message">
+                </mat-card-content>
+                </div>
+            <mat-card-actions>
+                <button mat-icon-button (click)="onDelete(chat.id)">
+                    <mat-icon>clear</mat-icon>
+                </button>
+
+                <div class="edit-actions">
+                    <button mat-icon-button *ngIf="editingMessageId !== chat.id" (click)="onStartEdit(chat.id)">
+                        <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button *ngIf="editingMessageId === chat.id" (click)="onSaveEdit(chat.id, chat.message)">
+                        <mat-icon>save</mat-icon>
+                    </button>
+                    <button mat-icon-button *ngIf="editingMessageId === chat.id" (click)="onCancelEdit()">
+                        <mat-icon>cancel</mat-icon>
+                    </button>
+                </div>
+            </mat-card-actions>
         </mat-card>
     </div>
 </div>
