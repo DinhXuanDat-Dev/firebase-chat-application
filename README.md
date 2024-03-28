@@ -25,3 +25,8 @@ Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To u
 ## Further help
 
 To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+
+## Install Tailwind CSS dependencies:
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init
+https://itnext.io/managing-the-sticky-navigation-angular-tailwind-and-rxjs-2f3a0147b1d9?gi=4133178c4b5b&ref=dailydev
