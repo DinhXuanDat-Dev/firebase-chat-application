@@ -12,7 +12,10 @@ import { MatDividerModule } from '@angular/material/divider';
 import { ChatComponent } from './components/chat/chat.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NavBarComponent } from './components/nav-bar/nav-bar/nav-bar.component';
-
+import { firebaseConfig } from 'src/environments/environment';
+import { AngularFireAuthModule } from '@angular/fire/compat/auth';
+import { AngularFireModule } from '@angular/fire/compat';
+import { AngularFireMessagingModule } from '@angular/fire/compat/messaging';
 @NgModule({
   declarations: [
     AppComponent,
@@ -30,6 +33,9 @@ import { NavBarComponent } from './components/nav-bar/nav-bar/nav-bar.component'
     MatCardModule,
     MatDividerModule,
     MatFormFieldModule,
+    AngularFireAuthModule,
+    AngularFireMessagingModule,
+    AngularFireModule.initializeApp(firebaseConfig)
   ],
   providers: [],
   bootstrap: [AppComponent]

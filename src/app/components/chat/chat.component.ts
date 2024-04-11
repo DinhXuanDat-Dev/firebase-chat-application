@@ -6,6 +6,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { Chat } from 'src/@core/interfaces/chat';
 import { firebaseConfig } from 'src/environments/environment';
 import { getDownloadURL, ref as storeRef, getStorage, uploadBytes, FirebaseStorage } from 'firebase/storage';
+
+import { AngularFireMessaging } from '@angular/fire/compat/messaging';
+import { AngularFireFunctions } from '@angular/fire/compat/functions';
 @Component({
   selector: 'app-chat',
   templateUrl: './chat.component.html',
@@ -24,6 +27,9 @@ export class ChatComponent implements OnInit {
   storage: FirebaseStorage;
   constructor(
     private formBuilder: FormBuilder,
+    private angularFireMessaging: AngularFireMessaging,
+    // private db: AngularFireDatabase,
+    private functions: AngularFireFunctions
   ) {
     this.app = initializeApp(firebaseConfig);
     this.storage = getStorage(this.app);
@@ -94,6 +100,9 @@ export class ChatComponent implements OnInit {
 
     this.form.reset();
     this.selectedFiles = null;
+
+    // Send push notification
+    this.sendPushNotification('New message', 'A new message has been posted!');
   }
 
   onDelete(chatId: string | undefined) {
@@ -131,6 +140,30 @@ export class ChatComponent implements OnInit {
 
   trackByChatId(index: number, chat: Chat): string | undefined {
     return chat.id;
+  }
+
+  receiveMessage(): void {
+    this.angularFireMessaging.messages.subscribe((payload) => {
+      console.log('New message received:', payload);
+      // Display or handle incoming notification
+    });
+  }
+
+  sendPushNotification(title: string, body: string): void {
+    const message = {
+      notification: {
+        title: title,
+        body: body
+      },
+      topic: 'chat_updates'
+    };
+
+    // Send notification through Firebase Cloud Functions
+    const sendNotification = this.functions.httpsCallable('sendNotification');
+    sendNotification(message).subscribe(res => {
+      console.log('res', res);
+      
+    });
   }
 
 }
